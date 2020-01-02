@@ -133,7 +133,16 @@ import (
 func New(msg string) error {
 	return &rootError{
 		msg:   msg,
-		stack: callers(3),
+		stack: callers(),
+	}
+}
+
+// NewGlobal creates a new root error for use as a global sentinel type.
+func NewGlobal(msg string) error {
+	return &rootError{
+		global: true,
+		msg:    msg,
+		stack:  callers(),
 	}
 }
 
@@ -141,7 +150,7 @@ func New(msg string) error {
 func Errorf(format string, args ...interface{}) error {
 	return &rootError{
 		msg:   fmt.Sprintf(format, args...),
-		stack: callers(3),
+		stack: callers(),
 	}
 }
 
@@ -152,36 +161,56 @@ func Errorf(format string, args ...interface{}) error {
 // wrapped with the new context. For external types (i.e. something other than root or wrap errors), a new root
 // error is created for the original error and then it's wrapped with the additional context.
 func Wrap(err error, msg string) error {
-	return wrap(err, msg)
-}
-
-// Wrapf adds additional context to all error types while maintaining the type of the original error.
-//
-// This is a convenience method for wrapping errors with formatted messages and is otherwise the same as Wrap.
-func Wrapf(err error, format string, args ...interface{}) error {
-	return wrap(err, fmt.Sprintf(format, args...))
-}
-
-func wrap(err error, msg string) error {
 	if err == nil {
 		return nil
 	}
 
 	switch e := err.(type) {
 	case *rootError:
-		e.stack = callers(4)
+		if e.global {
+			e.stack = callers()
+		}
 	case *wrapError:
 	default:
 		err = &rootError{
 			msg:   e.Error(),
-			stack: callers(4),
+			stack: callers(),
 		}
 	}
 
 	return &wrapError{
 		msg:   msg,
 		err:   err,
-		frame: caller(3),
+		frame: caller(),
+	}
+}
+
+// Wrapf adds additional context to all error types while maintaining the type of the original error.
+//
+// This is a convenience method for wrapping errors with formatted messages and is otherwise the same as Wrap.
+func Wrapf(err error, format string, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+
+	switch e := err.(type) {
+	case *rootError:
+		if e.global {
+			e.stack = callers()
+		}
+	case *wrapError:
+	default:
+		err = &rootError{
+			msg:   e.Error(),
+			stack: callers(),
+		}
+	}
+
+	msg := fmt.Sprintf(format, args...)
+	return &wrapError{
+		msg:   msg,
+		err:   err,
+		frame: caller(),
 	}
 }
 
@@ -235,8 +264,9 @@ func Cause(err error) error {
 }
 
 type rootError struct {
-	msg   string
-	stack *stack
+	global bool
+	msg    string
+	stack  *stack
 }
 
 func (e *rootError) Error() string {

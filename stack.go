@@ -17,22 +17,19 @@ func (f *StackFrame) formatFrame(sep string) string {
 	return fmt.Sprintf("%v%v%v%v%v", f.Name, sep, f.File, sep, f.Line)
 }
 
-// caller returns a single stack frame. the argument skip is the number of stack frames
-// to ascend, with 0 identifying the caller of Caller.
-func caller(skip int) *frame {
-	pc, _, _, _ := runtime.Caller(skip)
+// caller returns a single stack frame.
+func caller() *frame {
+	pc, _, _, _ := runtime.Caller(2)
 	var f frame = frame(pc)
 	return &f
 }
 
-// callers returns a stack trace. the argument skip is the number of stack frames to skip
-// before recording in pc, with 0 identifying the frame for Callers itself and 1 identifying
-// the caller of Callers.
-func callers(skip int) *stack {
+// callers returns a stack trace.
+func callers() *stack {
 	const depth = 64
 	var pcs [depth]uintptr
-	n := runtime.Callers(skip, pcs[:])
-	var st stack = pcs[0:n]
+	n := runtime.Callers(3, pcs[:])
+	var st stack = pcs[0 : n-2]
 	return &st
 }
 
