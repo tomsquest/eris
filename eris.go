@@ -29,11 +29,11 @@
 // something other than root or wrap errors), a new root error is created for
 // the original error and then it's wrapped with the additional context.
 //
-// 		_, err := db.Get(id)
-// 		if err != nil {
-//			// return the error with some useful context
-// 			return eris.Wrapf(err, "error getting resource '%v'", id)
-// 		}
+//    _, err := db.Get(id)
+//    if err != nil {
+//      // return the error with some useful context
+//      return eris.Wrapf(err, "error getting resource '%v'", id)
+//    }
 //
 // Inspecting error types
 //
@@ -45,13 +45,13 @@
 // found"), it's defined to be that error type (i.e. eris.Is will return
 // true).
 //
-// 		NotFound := eris.New("not found")
-// 		_, err := db.Get(id)
-//		// check if the resource was not found
-// 		if eris.Is(err, NotFound) || eris.Cause(err) == NotFound {
-//			// return the error with some useful context
-//			return eris.Wrapf(err, "error getting resource '%v'", id)
-//		}
+//    NotFound := eris.New("not found")
+//    _, err := db.Get(id)
+//    // check if the resource was not found
+//    if eris.Is(err, NotFound) || eris.Cause(err) == NotFound {
+//      // return the error with some useful context
+//      return eris.Wrapf(err, "error getting resource '%v'", id)
+//    }
 //
 // Stack traces
 //
@@ -61,26 +61,26 @@
 // errors but optional when printing or logging errors. Printing an error with
 // or without the stack trace is simple:
 //
-//		_, err := db.Get(id)
-//		if err != nil {
-//			return eris.Wrapf(err, "error getting resource '%v'", id)
-//		}
-//		fmt.Printf("%v", err) // print without the stack trace
-//		fmt.Printf("%+v", err) // print with the stack trace
+//    _, err := db.Get(id)
+//    if err != nil {
+//      return eris.Wrapf(err, "error getting resource '%v'", id)
+//    }
+//    fmt.Printf("%v", err) // print without the stack trace
+//    fmt.Printf("%+v", err) // print with the stack trace
 //
 // For an error that has been wrapped once, the output will look something
 // like this:
 //
-//		# output without the stack trace
-//		error getting resource 'example-id': not found
+//    # output without the stack trace
+//    error getting resource 'example-id': not found
 //
-//		# output with the stack trace
-//		error getting resource 'example-id'
-//			api.GetResource: /path/to/file/api.go: 30
-//		not found
-//			api.GetResource: /path/to/file/api.go: 30
-//			db.Get: /path/to/file/db.go: 99
-//			runtime.goexit: /path/to/go/src/libexec/src/runtime/asm_amd64.s: 1337
+//    # output with the stack trace
+//    error getting resource 'example-id'
+//      api.GetResource: /path/to/file/api.go: 30
+//    not found
+//      api.GetResource: /path/to/file/api.go: 30
+//      db.Get: /path/to/file/db.go: 99
+//      runtime.goexit: /path/to/go/src/libexec/src/runtime/asm_amd64.s: 1337
 //
 // The first layer of the full error output shows a message ("error getting
 // resource 'example-id'") and a single stack frame. The next layer shows the
