@@ -51,7 +51,7 @@ func TestUnpack(t *testing.T) {
 				ErrRoot: &eris.ErrRoot{
 					Msg: "root error",
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "even more context",
 					},
@@ -68,7 +68,7 @@ func TestUnpack(t *testing.T) {
 				ErrRoot: &eris.ErrRoot{
 					Msg: "external error",
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "even more context",
 					},
@@ -96,8 +96,8 @@ func TestUnpack(t *testing.T) {
 	for desc, tt := range tests {
 		t.Run(desc, func(t *testing.T) {
 			err := setupTestCase(false, tt.cause, tt.input)
-			if got := eris.Unpack(err); got.ErrChain != nil && tt.output.ErrChain != nil && !errChainsEqual(*got.ErrChain, *tt.output.ErrChain) {
-				t.Errorf("Unpack() ErrorChain = %v, want %v", *got.ErrChain, *tt.output.ErrChain)
+			if got := eris.Unpack(err); got.ErrChain != nil && tt.output.ErrChain != nil && !errChainsEqual(got.ErrChain, tt.output.ErrChain) {
+				t.Errorf("Unpack() ErrorChain = %v, want %v", got.ErrChain, tt.output.ErrChain)
 			}
 			if got := eris.Unpack(err); got.ErrRoot != nil && tt.output.ErrRoot != nil && !reflect.DeepEqual(got.ErrRoot.Msg, tt.output.ErrRoot.Msg) {
 				t.Errorf("Unpack() ErrorRoot = %v, want %v", got.ErrRoot.Msg, tt.output.ErrRoot.Msg)
@@ -148,7 +148,7 @@ func TestFormatStr(t *testing.T) {
 				ErrRoot: &eris.ErrRoot{
 					Msg: "root error",
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "even more context",
 					},
@@ -178,7 +178,7 @@ func TestFormatStr(t *testing.T) {
 						},
 					},
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "additional context",
 						Frame: eris.StackFrame{
@@ -257,7 +257,7 @@ func TestFormatJSON(t *testing.T) {
 				ErrRoot: &eris.ErrRoot{
 					Msg: "root error",
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "even more context",
 					},
@@ -288,7 +288,7 @@ func TestFormatJSON(t *testing.T) {
 						},
 					},
 				},
-				ErrChain: &[]eris.ErrLink{
+				ErrChain: []eris.ErrLink{
 					{
 						Msg: "additional context",
 						Frame: eris.StackFrame{

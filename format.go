@@ -34,7 +34,7 @@ func NewDefaultFormat(withTrace bool) Format {
 // from any error type. The ErrChain and ErrRoot fields correspond to `wrapError` and `rootError` types,
 // respectively. If any other error type is unpacked, it will appear in the ExternalErr field.
 type UnpackedError struct {
-	ErrChain    *[]ErrLink
+	ErrChain    []ErrLink
 	ErrRoot     *ErrRoot
 	ExternalErr string
 }
@@ -44,12 +44,11 @@ func Unpack(err error) UnpackedError {
 	e := UnpackedError{}
 	switch err.(type) {
 	case nil:
-		return UnpackedError{}
+		return e
 	case *rootError:
-		e = unpackRootErr(err.(*rootError))
+		e.unpackRootErr(err.(*rootError))
 	case *wrapError:
-		chain := []ErrLink{}
-		e = unpackWrapErr(&chain, err.(*wrapError))
+		e.unpackWrapErr(err.(*wrapError))
 	default:
 		e.ExternalErr = err.Error()
 	}
@@ -59,8 +58,8 @@ func Unpack(err error) UnpackedError {
 // ToString returns a default formatted string for a given eris error.
 func (upErr *UnpackedError) ToString(format Format) string {
 	var str string
-	if upErr.ErrChain != nil {
-		for _, eLink := range *upErr.ErrChain {
+	if len(upErr.ErrChain) != 0 {
+		for _, eLink := range upErr.ErrChain {
 			str += eLink.formatStr(format)
 		}
 	}
@@ -80,9 +79,9 @@ func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	if fmtRootErr := upErr.ErrRoot.formatJSON(format); fmtRootErr != nil {
 		jsonMap["error root"] = fmtRootErr
 	}
-	if upErr.ErrChain != nil {
+	if len(upErr.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
-		for _, eLink := range *upErr.ErrChain {
+		for _, eLink := range upErr.ErrChain {
 			wrapMap := eLink.formatJSON(format)
 			wrapArr = append(wrapArr, wrapMap)
 		}
@@ -94,37 +93,31 @@ func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	return jsonMap
 }
 
-func unpackRootErr(err *rootError) UnpackedError {
-	return UnpackedError{
-		ErrRoot: &ErrRoot{
-			Msg:   err.msg,
-			Stack: err.stack.get(),
-		},
+// todo: add stack corrections to this
+func (upErr *UnpackedError) unpackRootErr(err *rootError) {
+	upErr.ErrRoot = &ErrRoot{
+		Msg:   err.msg,
+		Stack: err.stack.get(),
 	}
 }
 
-func unpackWrapErr(chain *[]ErrLink, err *wrapError) UnpackedError {
-	link := ErrLink{}
-	link.Frame = *err.frame.get()
-	link.Msg = err.msg
-	*chain = append(*chain, link)
-
-	e := UnpackedError{}
-	e.ErrChain = chain
+func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
+	upErr.ErrChain = append(upErr.ErrChain, ErrLink{
+		Msg:   err.msg,
+		Frame: *err.frame.get(),
+	})
 
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
 	case nil:
-		return e
+		return
 	case *rootError:
-		uErr := unpackRootErr(nextErr.(*rootError))
-		e.ErrRoot = uErr.ErrRoot
+		upErr.unpackRootErr(nextErr.(*rootError))
 	case *wrapError:
-		e = unpackWrapErr(chain, nextErr.(*wrapError))
+		upErr.unpackWrapErr(nextErr.(*wrapError))
 	default:
-		e.ExternalErr = err.Error()
+		upErr.ExternalErr = err.Error()
 	}
-	return e
 }
 
 // ErrRoot represents an error stack and the accompanying message.
