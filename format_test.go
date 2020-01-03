@@ -226,12 +226,6 @@ func TestFormatJSON(t *testing.T) {
 					Msg: "root error",
 				},
 			},
-			formattedInput:  eris.UnpackedError{},
-			basicOutput:     `{"error root":{"message":"root error"}}`,
-			formattedOutput: `{}`,
-		},
-		"basic root error (formatted)": {
-			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
 				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
@@ -249,8 +243,8 @@ func TestFormatJSON(t *testing.T) {
 					},
 				},
 			},
-			formattedOutput: `{"error root":{"message":"root error","stack":["eris.TestFormatStr: format_test.go: 99","golang.Runtime: runtime.go: 100"]}}`,
-			basicOutput:     `{}`,
+			basicOutput:     `{"root":{"message":"root error"}}`,
+			formattedOutput: `{"root":{"message":"root error","stack":["eris.TestFormatStr: format_test.go: 99","golang.Runtime: runtime.go: 100"]}}`,
 		},
 		"basic wrapped error": {
 			basicInput: eris.UnpackedError{
@@ -266,12 +260,6 @@ func TestFormatJSON(t *testing.T) {
 					},
 				},
 			},
-			formattedInput:  eris.UnpackedError{},
-			basicOutput:     `{"error chain":[{"message":"even more context"},{"message":"additional context"}],"error root":{"message":"root error"}}`,
-			formattedOutput: `{}`,
-		},
-		"basic wrapped error (formatted)": {
-			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
 				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
@@ -299,15 +287,15 @@ func TestFormatJSON(t *testing.T) {
 					},
 				},
 			},
-			basicOutput:     `{}`,
-			formattedOutput: `{"error chain":[{"message":"additional context","stack":"eris.TestFormatStr: format_test.go: 300"}],"error root":{"message":"root error","stack":["eris.TestFormatStr: format_test.go: 99","golang.Runtime: runtime.go: 100"]}}`,
+			basicOutput:     `{"root":{"message":"root error"},"wrap":[{"message":"even more context"},{"message":"additional context"}]}`,
+			formattedOutput: `{"root":{"message":"root error","stack":["eris.TestFormatStr: format_test.go: 99","golang.Runtime: runtime.go: 100"]},"wrap":[{"message":"additional context","stack":"eris.TestFormatStr: format_test.go: 300"}]}`,
 		},
 		"basic external error": {
 			basicInput: eris.UnpackedError{
 				ExternalErr: "external error",
 			},
 			formattedInput:  eris.UnpackedError{},
-			basicOutput:     `{"external error":"external error"}`,
+			basicOutput:     `{"external":"external error"}`,
 			formattedOutput: `{}`,
 		},
 	}

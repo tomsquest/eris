@@ -62,7 +62,9 @@ func (upErr *UnpackedError) ToString(format Format) string {
 		str += upErr.ErrRoot.formatStr(format)
 	}
 	for _, eLink := range upErr.ErrChain {
-		str += format.Sep
+		if !format.WithTrace {
+			str += format.Sep
+		}
 		str += eLink.formatStr(format)
 	}
 	if upErr.ExternalErr != "" {
@@ -74,8 +76,8 @@ func (upErr *UnpackedError) ToString(format Format) string {
 // ToJSON returns a JSON formatted map for a given eris error.
 func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	jsonMap := make(map[string]interface{})
-	if fmtRootErr := upErr.ErrRoot.formatJSON(format); fmtRootErr != nil {
-		jsonMap["root"] = fmtRootErr
+	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+		jsonMap["root"] = upErr.ErrRoot.formatJSON(format)
 	}
 	if len(upErr.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
