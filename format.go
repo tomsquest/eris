@@ -162,7 +162,7 @@ func (eLink *ErrLink) formatStr(format Format) string {
 	str += format.Msg
 	if format.WithTrace {
 		str += format.TBeg
-		str += eLink.Frame.formatFrame(format.TSep)
+		str += eLink.Frame.format(format.TSep)
 	}
 	str += format.Sep
 	return str
@@ -172,7 +172,7 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 	wrapMap := make(map[string]interface{})
 	wrapMap["message"] = fmt.Sprint(eLink.Msg)
 	if format.WithTrace {
-		wrapMap["stack"] = eLink.Frame.formatFrame(format.TSep)
+		wrapMap["stack"] = eLink.Frame.format(format.TSep)
 	}
 	return wrapMap
 }
@@ -180,7 +180,7 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 func formatStackFrames(s []StackFrame, sep string) []string {
 	var str []string
 	for _, f := range s {
-		str = append(str, f.formatFrame(sep))
+		str = append(str, f.format(sep))
 	}
 	return str
 }

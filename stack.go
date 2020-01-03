@@ -13,7 +13,7 @@ type StackFrame struct {
 	Line int
 }
 
-func (f *StackFrame) formatFrame(sep string) string {
+func (f *StackFrame) format(sep string) string {
 	return fmt.Sprintf("%v%v%v%v%v", f.Name, sep, f.File, sep, f.Line)
 }
 

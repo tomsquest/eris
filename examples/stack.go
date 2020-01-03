@@ -44,7 +44,7 @@ func nestedGlobalPkgErr() error {
 }
 
 // todo: after implementing stack trace unpacking, try hard to break it
-//       pretty sure it's possible if there are stack frames between the end of the stack and newer frames
+//       pretty sure it's possible if there are stack frames between the end of the stack and newer wrap frames
 
 func main() {
 	fmt.Println("\n--- local eris ---")
