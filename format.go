@@ -88,20 +88,27 @@ func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	return jsonMap
 }
 
-// todo: add stack corrections to this
+// unpackRootErr unpacks a rootError's message and stack trace.
+// it also appends any additional wrapError frames to the stack.
 func (upErr *UnpackedError) unpackRootErr(err *rootError) {
+	stack := err.stack.get()
+	for i := len(upErr.ErrChain) - 1; i >= 0; i-- {
+		if !stackContains(stack, upErr.ErrChain[i].Frame) {
+			stack = append(stack, upErr.ErrChain[i].Frame)
+		}
+	}
 	upErr.ErrRoot = &ErrRoot{
 		Msg:   err.msg,
-		Stack: err.stack.get(),
+		Stack: stack,
 	}
 }
 
+// unpackWrapErr unpacks a wrapError until it hits a rootError.
 func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
 	upErr.ErrChain = append(upErr.ErrChain, ErrLink{
 		Msg:   err.msg,
 		Frame: *err.frame.get(),
 	})
-
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
 	case nil:
@@ -175,6 +182,15 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 		wrapMap["stack"] = eLink.Frame.format(format.TSep)
 	}
 	return wrapMap
+}
+
+func stackContains(stack []StackFrame, frame StackFrame) bool {
+	for _, f := range stack {
+		if f == frame {
+			return true
+		}
+	}
+	return false
 }
 
 func formatStackFrames(s []StackFrame, sep string) []string {
