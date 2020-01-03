@@ -48,15 +48,15 @@ func TestUnpack(t *testing.T) {
 			cause: eris.New("root error"),
 			input: []string{"additional context", "even more context"},
 			output: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 				ErrChain: []eris.ErrLink{
 					{
-						Msg: "even more context",
+						Msg: "additional context",
 					},
 					{
-						Msg: "additional context",
+						Msg: "even more context",
 					},
 				},
 			},
@@ -65,15 +65,15 @@ func TestUnpack(t *testing.T) {
 			cause: errors.New("external error"),
 			input: []string{"additional context", "even more context"},
 			output: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "external error",
 				},
 				ErrChain: []eris.ErrLink{
 					{
-						Msg: "even more context",
+						Msg: "additional context",
 					},
 					{
-						Msg: "additional context",
+						Msg: "even more context",
 					},
 				},
 			},
@@ -81,7 +81,7 @@ func TestUnpack(t *testing.T) {
 		"no error wrapping with internal root cause (eris.Errorf)": {
 			cause: eris.Errorf("%v", "root error"),
 			output: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 			},
@@ -99,7 +99,7 @@ func TestUnpack(t *testing.T) {
 			if got := eris.Unpack(err); got.ErrChain != nil && tt.output.ErrChain != nil && !errChainsEqual(got.ErrChain, tt.output.ErrChain) {
 				t.Errorf("Unpack() ErrorChain = %v, want %v", got.ErrChain, tt.output.ErrChain)
 			}
-			if got := eris.Unpack(err); got.ErrRoot != nil && tt.output.ErrRoot != nil && !reflect.DeepEqual(got.ErrRoot.Msg, tt.output.ErrRoot.Msg) {
+			if got := eris.Unpack(err); !reflect.DeepEqual(got.ErrRoot.Msg, tt.output.ErrRoot.Msg) {
 				t.Errorf("Unpack() ErrorRoot = %v, want %v", got.ErrRoot.Msg, tt.output.ErrRoot.Msg)
 			}
 		})
@@ -115,7 +115,7 @@ func TestFormatStr(t *testing.T) {
 	}{
 		"basic root error": {
 			basicInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 			},
@@ -125,7 +125,7 @@ func TestFormatStr(t *testing.T) {
 		"basic root error (formatted)": {
 			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 					Stack: []eris.StackFrame{
 						{
@@ -145,25 +145,25 @@ func TestFormatStr(t *testing.T) {
 		},
 		"basic wrapped error": {
 			basicInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 				ErrChain: []eris.ErrLink{
 					{
-						Msg: "even more context",
+						Msg: "additional context",
 					},
 					{
-						Msg: "additional context",
+						Msg: "even more context",
 					},
 				},
 			},
 			formattedInput: eris.UnpackedError{},
-			basicOutput:    "even more context: additional context: root error",
+			basicOutput:    "root error: additional context: even more context",
 		},
 		"basic wrapped error (formatted)": {
 			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 					Stack: []eris.StackFrame{
 						{
@@ -189,7 +189,7 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
-			formattedOutput: "additional context\n\teris.TestFormatStr: format_test.go: 300\nroot error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\n",
+			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\nadditional context\n\teris.TestFormatStr: format_test.go: 300\n",
 		},
 		"basic external error": {
 			basicInput: eris.UnpackedError{
@@ -202,12 +202,12 @@ func TestFormatStr(t *testing.T) {
 	for desc, tt := range tests {
 		t.Run(desc, func(t *testing.T) {
 			if got := tt.basicInput.ToString(eris.NewDefaultFormat(false)); !reflect.DeepEqual(got, tt.basicOutput) {
-				t.Errorf("ToString() = %v, want %v", got, tt.basicOutput)
+				t.Errorf("\nToString() got:\n%v\nwant:\n%v", got, tt.basicOutput)
 			}
 		})
 		t.Run(desc, func(t *testing.T) {
 			if got := tt.formattedInput.ToString(eris.NewDefaultFormat(true)); !reflect.DeepEqual(got, tt.formattedOutput) {
-				t.Errorf("ToString() = %v, want %v", got, tt.formattedOutput)
+				t.Errorf("\nToString() got:\n%v\nwant:\n%v", got, tt.formattedOutput)
 			}
 		})
 	}
@@ -222,7 +222,7 @@ func TestFormatJSON(t *testing.T) {
 	}{
 		"basic root error": {
 			basicInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 			},
@@ -233,7 +233,7 @@ func TestFormatJSON(t *testing.T) {
 		"basic root error (formatted)": {
 			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 					Stack: []eris.StackFrame{
 						{
@@ -254,7 +254,7 @@ func TestFormatJSON(t *testing.T) {
 		},
 		"basic wrapped error": {
 			basicInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 				},
 				ErrChain: []eris.ErrLink{
@@ -273,7 +273,7 @@ func TestFormatJSON(t *testing.T) {
 		"basic wrapped error (formatted)": {
 			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
-				ErrRoot: &eris.ErrRoot{
+				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
 					Stack: []eris.StackFrame{
 						{

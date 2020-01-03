@@ -33,12 +33,12 @@ func TestErrorWrapping(t *testing.T) {
 		"standard error wrapping with internal root cause (eris.New)": {
 			cause:  eris.New("root error"),
 			input:  []string{"additional context", "even more context"},
-			output: "even more context: additional context: root error",
+			output: "root error: additional context: even more context",
 		},
 		"standard error wrapping with external root cause (errors.New)": {
 			cause:  errors.New("external error"),
 			input:  []string{"additional context", "even more context"},
-			output: "even more context: additional context: external error",
+			output: "external error: additional context: even more context",
 		},
 		"no error wrapping with internal root cause (eris.Errorf)": {
 			cause:  eris.Errorf("%v", "root error"),
@@ -72,8 +72,8 @@ func TestErrorUnwrap(t *testing.T) {
 			cause: eris.New("root error"),
 			input: []string{"additional context", "even more context"},
 			output: []string{
-				"even more context: additional context: root error",
-				"additional context: root error",
+				"root error: additional context: even more context",
+				"root error: additional context",
 				"root error",
 			},
 		},
@@ -81,8 +81,8 @@ func TestErrorUnwrap(t *testing.T) {
 			cause: errors.New("external error"),
 			input: []string{"additional context", "even more context"},
 			output: []string{
-				"even more context: additional context: external error",
-				"additional context: external error",
+				"external error: additional context: even more context",
+				"external error: additional context",
 				"external error",
 			},
 		},
@@ -221,12 +221,12 @@ func TestErrorFormatting(t *testing.T) {
 		"standard error wrapping with internal root cause (eris.New)": {
 			cause:  eris.New("root error"),
 			input:  []string{"additional context", "even more context"},
-			output: "even more context: additional context: root error",
+			output: "root error: additional context: even more context",
 		},
 		"standard error wrapping with external root cause (errors.New)": {
 			cause:  errors.New("external error"),
 			input:  []string{"additional context", "even more context"},
-			output: "even more context: additional context: external error",
+			output: "external error: additional context: even more context",
 		},
 	}
 

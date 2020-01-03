@@ -34,8 +34,8 @@ func NewDefaultFormat(withTrace bool) Format {
 // from any error type. The ErrChain and ErrRoot fields correspond to `wrapError` and `rootError` types,
 // respectively. If any other error type is unpacked, it will appear in the ExternalErr field.
 type UnpackedError struct {
+	ErrRoot     ErrRoot
 	ErrChain    []ErrLink
-	ErrRoot     *ErrRoot
 	ExternalErr string
 }
 
@@ -58,10 +58,13 @@ func Unpack(err error) UnpackedError {
 // ToString returns a default formatted string for a given eris error.
 func (upErr *UnpackedError) ToString(format Format) string {
 	var str string
+	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+		str += upErr.ErrRoot.formatStr(format)
+	}
 	for _, eLink := range upErr.ErrChain {
+		str += format.Sep
 		str += eLink.formatStr(format)
 	}
-	str += upErr.ErrRoot.formatStr(format)
 	if upErr.ExternalErr != "" {
 		str += fmt.Sprint(upErr.ExternalErr)
 	}
@@ -72,7 +75,7 @@ func (upErr *UnpackedError) ToString(format Format) string {
 func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	jsonMap := make(map[string]interface{})
 	if fmtRootErr := upErr.ErrRoot.formatJSON(format); fmtRootErr != nil {
-		jsonMap["error root"] = fmtRootErr
+		jsonMap["root"] = fmtRootErr
 	}
 	if len(upErr.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
@@ -80,10 +83,10 @@ func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 			wrapMap := eLink.formatJSON(format)
 			wrapArr = append(wrapArr, wrapMap)
 		}
-		jsonMap["error chain"] = wrapArr
+		jsonMap["wrap"] = wrapArr
 	}
 	if upErr.ExternalErr != "" {
-		jsonMap["external error"] = fmt.Sprint(upErr.ExternalErr)
+		jsonMap["external"] = fmt.Sprint(upErr.ExternalErr)
 	}
 	return jsonMap
 }
@@ -97,18 +100,19 @@ func (upErr *UnpackedError) unpackRootErr(err *rootError) {
 			stack = append(stack, upErr.ErrChain[i].Frame)
 		}
 	}
-	upErr.ErrRoot = &ErrRoot{
-		Msg:   err.msg,
-		Stack: stack,
-	}
+	upErr.ErrRoot.Msg = err.msg
+	upErr.ErrRoot.Stack = stack
 }
 
 // unpackWrapErr unpacks a wrapError until it hits a rootError.
 func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
-	upErr.ErrChain = append(upErr.ErrChain, ErrLink{
+	// Prepend each link so they'll appear in the same order as the stack.
+	link := ErrLink{
 		Msg:   err.msg,
 		Frame: *err.frame.get(),
-	})
+	}
+	upErr.ErrChain = append([]ErrLink{link}, upErr.ErrChain...)
+
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
 	case nil:
@@ -171,7 +175,6 @@ func (eLink *ErrLink) formatStr(format Format) string {
 		str += format.TBeg
 		str += eLink.Frame.format(format.TSep)
 	}
-	str += format.Sep
 	return str
 }
 

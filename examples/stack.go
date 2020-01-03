@@ -7,6 +7,11 @@ import (
 	"github.com/rotisserie/eris"
 )
 
+// todo: add ExampleLocal, ExampleGlobal, ExamplePkgErrors
+//       use closures to demonstrate error wrapping, etc
+//       make each example self-contained for godocs
+//       integrate play for golang playground
+
 var GlobalPkgErr = errors.New("new global pkg error")
 
 var GlobalErr = eris.NewGlobal("new global eris error")
@@ -47,16 +52,22 @@ func nestedGlobalPkgErr() error {
 //       pretty sure it's possible if there are stack frames between the end of the stack and newer wrap frames
 
 func main() {
-	fmt.Println("\n--- local eris ---")
 	localErr := localErr()
 	localErr = eris.Wrap(localErr, "new context")
-	fmt.Printf("%+v", localErr)
+	fmt.Println("\n--- local eris string ('%+v') ---")
+	fmt.Println(fmt.Sprintf("%+v", localErr))
+	fmt.Println("------")
+	fmt.Println("\n--- local eris JSON ('%#+j') ---")
+	fmt.Println(fmt.Sprintf("%#+j", localErr))
 	fmt.Println("------")
 
-	fmt.Println("\n--- nested local eris ---")
 	nestedLocalErr := nestedLocalErr()
 	nestedLocalErr = eris.Wrap(nestedLocalErr, "new context")
-	fmt.Printf("%+v", nestedLocalErr)
+	fmt.Println("\n--- nested local eris string ('%+v') ---")
+	fmt.Fprintln("%+v", nestedLocalErr)
+	fmt.Println("------")
+	fmt.Println("\n--- nested local eris JSON ('%#+j') ---")
+	fmt.Fprintln("%+#v", nestedLocalErr)
 	fmt.Println("------")
 
 	fmt.Println("\n--- nested local pkg/errors ---")
@@ -65,17 +76,25 @@ func main() {
 	fmt.Printf("%+v", nestedLocalPkgErr)
 	fmt.Println("\n------")
 
-	fmt.Println("\n--- global eris ---")
 	globalErr := globalErr()
 	globalErr = eris.Wrap(globalErr, "new context")
-	fmt.Printf("%+v", globalErr)
-	fmt.Println("------")
+	fmt.Println("--- global eris string ('%+v') ---")
+	fmt.Fprintln("%+v\n", globalErr)
+	fmt.Println("--- global eris JSON ('%#+j') ---")
+	fmt.Fprintln("%+#j\n\n", globalErr)
 
 	fmt.Println("\n--- nested global eris ---")
 	nestedGlobalErr := nestedGlobalErr()
 	nestedGlobalErr = eris.Wrap(nestedGlobalErr, "new context")
 	err := eris.Wrap(nestedGlobalErr, "more context")
-	fmt.Printf("%+v", err)
+	fmt.Println("\n--- nested global eris string ('%+v') ---")
+	fmt.Println(fmt.Sprintf("%+v", nestedGlobalErr))
+	fmt.Println("------")
+	fmt.Println("\n--- nested global eris JSON ('%+j') ---")
+	fmt.Println(fmt.Sprintf("%+j", nestedGlobalErr))
+	fmt.Println("------")
+	fmt.Println("\n--- nested global eris JSON ('%#+j') ---")
+	fmt.Println(fmt.Sprintf("%+#j", nestedGlobalErr))
 	fmt.Println("------")
 
 	fmt.Println("\n--- nested global pkg/errors ---")
