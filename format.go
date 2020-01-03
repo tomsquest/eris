@@ -34,7 +34,7 @@ func NewDefaultFormat(withTrace bool) Format {
 // from any error type. The ErrChain and ErrRoot fields correspond to `wrapError` and `rootError` types,
 // respectively. If any other error type is unpacked, it will appear in the ExternalErr field.
 type UnpackedError struct {
-	ErrChain    *[]ErrLink
+	ErrChain    []ErrLink
 	ErrRoot     *ErrRoot
 	ExternalErr string
 }
@@ -44,12 +44,11 @@ func Unpack(err error) UnpackedError {
 	e := UnpackedError{}
 	switch err.(type) {
 	case nil:
-		return UnpackedError{}
+		return e
 	case *rootError:
-		e = unpackRootErr(err.(*rootError))
+		e.unpackRootErr(err.(*rootError))
 	case *wrapError:
-		chain := []ErrLink{}
-		e = unpackWrapErr(&chain, err.(*wrapError))
+		e.unpackWrapErr(err.(*wrapError))
 	default:
 		e.ExternalErr = err.Error()
 	}
@@ -59,10 +58,8 @@ func Unpack(err error) UnpackedError {
 // ToString returns a default formatted string for a given eris error.
 func (upErr *UnpackedError) ToString(format Format) string {
 	var str string
-	if upErr.ErrChain != nil {
-		for _, eLink := range *upErr.ErrChain {
-			str += eLink.formatStr(format)
-		}
+	for _, eLink := range upErr.ErrChain {
+		str += eLink.formatStr(format)
 	}
 	str += upErr.ErrRoot.formatStr(format)
 	if upErr.ExternalErr != "" {
@@ -73,16 +70,13 @@ func (upErr *UnpackedError) ToString(format Format) string {
 
 // ToJSON returns a JSON formatted map for a given eris error.
 func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
-	if upErr == nil {
-		return nil
-	}
 	jsonMap := make(map[string]interface{})
 	if fmtRootErr := upErr.ErrRoot.formatJSON(format); fmtRootErr != nil {
 		jsonMap["error root"] = fmtRootErr
 	}
-	if upErr.ErrChain != nil {
+	if len(upErr.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
-		for _, eLink := range *upErr.ErrChain {
+		for _, eLink := range upErr.ErrChain {
 			wrapMap := eLink.formatJSON(format)
 			wrapArr = append(wrapArr, wrapMap)
 		}
@@ -94,37 +88,38 @@ func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	return jsonMap
 }
 
-func unpackRootErr(err *rootError) UnpackedError {
-	return UnpackedError{
-		ErrRoot: &ErrRoot{
-			Msg:   err.msg,
-			Stack: err.stack.get(),
-		},
+// unpackRootErr unpacks a rootError's message and stack trace.
+// it also appends any additional wrapError frames to the stack.
+func (upErr *UnpackedError) unpackRootErr(err *rootError) {
+	stack := err.stack.get()
+	for i := len(upErr.ErrChain) - 1; i >= 0; i-- {
+		if !stackContains(stack, upErr.ErrChain[i].Frame) {
+			stack = append(stack, upErr.ErrChain[i].Frame)
+		}
+	}
+	upErr.ErrRoot = &ErrRoot{
+		Msg:   err.msg,
+		Stack: stack,
 	}
 }
 
-func unpackWrapErr(chain *[]ErrLink, err *wrapError) UnpackedError {
-	link := ErrLink{}
-	link.Frame = *err.frame.get()
-	link.Msg = err.msg
-	*chain = append(*chain, link)
-
-	e := UnpackedError{}
-	e.ErrChain = chain
-
+// unpackWrapErr unpacks a wrapError until it hits a rootError.
+func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
+	upErr.ErrChain = append(upErr.ErrChain, ErrLink{
+		Msg:   err.msg,
+		Frame: *err.frame.get(),
+	})
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
 	case nil:
-		return e
+		return
 	case *rootError:
-		uErr := unpackRootErr(nextErr.(*rootError))
-		e.ErrRoot = uErr.ErrRoot
+		upErr.unpackRootErr(nextErr.(*rootError))
 	case *wrapError:
-		e = unpackWrapErr(chain, nextErr.(*wrapError))
+		upErr.unpackWrapErr(nextErr.(*wrapError))
 	default:
-		e.ExternalErr = err.Error()
+		upErr.ExternalErr = err.Error()
 	}
-	return e
 }
 
 // ErrRoot represents an error stack and the accompanying message.
@@ -174,7 +169,7 @@ func (eLink *ErrLink) formatStr(format Format) string {
 	str += format.Msg
 	if format.WithTrace {
 		str += format.TBeg
-		str += eLink.Frame.formatFrame(format.TSep)
+		str += eLink.Frame.format(format.TSep)
 	}
 	str += format.Sep
 	return str
@@ -184,15 +179,24 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 	wrapMap := make(map[string]interface{})
 	wrapMap["message"] = fmt.Sprint(eLink.Msg)
 	if format.WithTrace {
-		wrapMap["stack"] = eLink.Frame.formatFrame(format.TSep)
+		wrapMap["stack"] = eLink.Frame.format(format.TSep)
 	}
 	return wrapMap
+}
+
+func stackContains(stack []StackFrame, frame StackFrame) bool {
+	for _, f := range stack {
+		if f == frame {
+			return true
+		}
+	}
+	return false
 }
 
 func formatStackFrames(s []StackFrame, sep string) []string {
 	var str []string
 	for _, f := range s {
-		str = append(str, f.formatFrame(sep))
+		str = append(str, f.format(sep))
 	}
 	return str
 }
