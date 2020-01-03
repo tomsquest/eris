@@ -28,9 +28,12 @@ jobs:
       run: make build
 
     - name: Test
+      run: make test
+
+    - name: Test coverage
       run: make test-coverage
 
-    - name: Upload Coverage report to CodeCov
+    - name: Upload coverage report to CodeCov
       uses: codecov/codecov-action@v1.0.0
       with:
         token: ${{secrets.CODECOV_TOKEN}}
