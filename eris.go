@@ -191,12 +191,12 @@ func (e *wrapError) Unwrap() error {
 }
 
 func printError(err error, s fmt.State, verb rune) {
-	var withTrace, withIndent bool
+	var withTrace, withJSON bool
 	if s.Flag('+') {
 		withTrace = true
 	}
 	if s.Flag('#') {
-		withIndent = true
+		withJSON = true
 	}
 	format := NewDefaultFormat(withTrace)
 	uErr := Unpack(err)
@@ -206,15 +206,12 @@ func printError(err error, s fmt.State, verb rune) {
 	case 's':
 		fallthrough
 	case 'v':
-		str = uErr.ToString(format)
-	case 'j':
-		var bytes []byte
-		if withIndent {
-			bytes, _ = json.MarshalIndent(uErr.ToJSON(format), "", "\t")
+		if withJSON {
+			bytes, _ := json.MarshalIndent(uErr.ToJSON(format), "", "\t")
+			str = string(bytes)
 		} else {
-			bytes, _ = json.Marshal(uErr.ToJSON(format))
+			str = uErr.ToString(format)
 		}
-		str = string(bytes)
 	}
 
 	_, _ = io.WriteString(s, str)

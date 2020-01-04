@@ -141,7 +141,7 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
-			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\n",
+			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100",
 		},
 		"basic wrapped error": {
 			basicInput: eris.UnpackedError{
@@ -189,7 +189,7 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
-			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\nadditional context\n\teris.TestFormatStr: format_test.go: 300\n",
+			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\nadditional context\n\teris.TestFormatStr: format_test.go: 300",
 		},
 		"basic external error": {
 			basicInput: eris.UnpackedError{
@@ -202,12 +202,12 @@ func TestFormatStr(t *testing.T) {
 	for desc, tt := range tests {
 		t.Run(desc, func(t *testing.T) {
 			if got := tt.basicInput.ToString(eris.NewDefaultFormat(false)); !reflect.DeepEqual(got, tt.basicOutput) {
-				t.Errorf("\nToString() got:\n%v\nwant:\n%v", got, tt.basicOutput)
+				t.Errorf("ToString() got\n'%v'\nwant\n'%v'", got, tt.basicOutput)
 			}
 		})
 		t.Run(desc, func(t *testing.T) {
 			if got := tt.formattedInput.ToString(eris.NewDefaultFormat(true)); !reflect.DeepEqual(got, tt.formattedOutput) {
-				t.Errorf("\nToString() got:\n%v\nwant:\n%v", got, tt.formattedOutput)
+				t.Errorf("ToString() got\n'%v'\nwant\n'%v'", got, tt.formattedOutput)
 			}
 		})
 	}

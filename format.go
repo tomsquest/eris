@@ -61,6 +61,9 @@ func (upErr *UnpackedError) ToString(format Format) string {
 	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
 		str += upErr.ErrRoot.formatStr(format)
 	}
+	if format.WithTrace && len(upErr.ErrChain) != 0 {
+		str += format.Sep
+	}
 	for _, eLink := range upErr.ErrChain {
 		if !format.WithTrace {
 			str += format.Sep
@@ -142,10 +145,12 @@ func (err *ErrRoot) formatStr(format Format) string {
 	str += format.Msg
 	if format.WithTrace {
 		stackArr := formatStackFrames(err.Stack, format.TSep)
-		for _, frame := range stackArr {
+		for i, frame := range stackArr {
 			str += format.TBeg
 			str += frame
-			str += format.Sep
+			if i < len(stackArr)-1 {
+				str += format.Sep
+			}
 		}
 	}
 	return str
