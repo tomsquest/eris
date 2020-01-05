@@ -56,78 +56,89 @@ func Unpack(err error) UnpackedError {
 }
 
 // ToString returns a default formatted string for a given eris error.
-func (upErr *UnpackedError) ToString(format Format) string {
+func (e *UnpackedError) ToString(format Format) string {
 	var str string
-	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
-		str += upErr.ErrRoot.formatStr(format)
+	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
+		str += e.ErrRoot.formatStr(format)
 	}
-	if format.WithTrace && len(upErr.ErrChain) != 0 {
+	if format.WithTrace && len(e.ErrChain) != 0 {
 		str += format.Sep
 	}
-	for _, eLink := range upErr.ErrChain {
+	for _, eLink := range e.ErrChain {
 		if !format.WithTrace {
 			str += format.Sep
 		}
 		str += eLink.formatStr(format)
 	}
-	if upErr.ExternalErr != "" {
-		str += fmt.Sprint(upErr.ExternalErr)
+	if e.ExternalErr != "" {
+		str += fmt.Sprint(e.ExternalErr)
 	}
 	return str
 }
 
 // ToJSON returns a JSON formatted map for a given eris error.
-func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
+func (e *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	jsonMap := make(map[string]interface{})
-	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
-		jsonMap["root"] = upErr.ErrRoot.formatJSON(format)
+	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
+		jsonMap["root"] = e.ErrRoot.formatJSON(format)
 	}
-	if len(upErr.ErrChain) != 0 {
+	if len(e.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
-		for _, eLink := range upErr.ErrChain {
+		for _, eLink := range e.ErrChain {
 			wrapMap := eLink.formatJSON(format)
 			wrapArr = append(wrapArr, wrapMap)
 		}
 		jsonMap["wrap"] = wrapArr
 	}
-	if upErr.ExternalErr != "" {
-		jsonMap["external"] = fmt.Sprint(upErr.ExternalErr)
+	if e.ExternalErr != "" {
+		jsonMap["external"] = fmt.Sprint(e.ExternalErr)
 	}
 	return jsonMap
 }
 
 // unpackRootErr unpacks a rootError's message and stack trace.
 // it also appends any additional wrapError frames to the stack.
-func (upErr *UnpackedError) unpackRootErr(err *rootError) {
-	stack := err.stack.get()
-	for i := len(upErr.ErrChain) - 1; i >= 0; i-- {
-		if !stackContains(stack, upErr.ErrChain[i].Frame) {
-			stack = append(stack, upErr.ErrChain[i].Frame)
-		}
-	}
-	upErr.ErrRoot.Msg = err.msg
-	upErr.ErrRoot.Stack = stack
+func (e *UnpackedError) unpackRootErr(err *rootError) {
+	e.ErrRoot.Msg = err.msg
+	e.ErrRoot.Stack = err.stack.get()
 }
 
 // unpackWrapErr unpacks a wrapError until it hits a rootError.
-func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
+func (e *UnpackedError) unpackWrapErr(err *wrapError) {
 	// Prepend each link so they'll appear in the same order as the stack.
-	link := ErrLink{
-		Msg:   err.msg,
-		Frame: *err.frame.get(),
+	link := ErrLink{Msg: err.msg}
+	stack := err.stack.get()
+	if len(stack) > 0 {
+		link.Frame = stack[0]
 	}
-	upErr.ErrChain = append([]ErrLink{link}, upErr.ErrChain...)
+	e.ErrChain = append([]ErrLink{link}, e.ErrChain...)
 
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
-	case nil:
-		return
 	case *rootError:
-		upErr.unpackRootErr(nextErr.(*rootError))
+		e.unpackRootErr(nextErr.(*rootError))
 	case *wrapError:
-		upErr.unpackWrapErr(nextErr.(*wrapError))
+		e.unpackWrapErr(nextErr.(*wrapError))
 	default:
-		upErr.ExternalErr = err.Error()
+		return
+	}
+
+	// e.ErrRoot.Stack = insertFrame(stack[0])
+
+	// todo: move this to a helper method that's part of the Stack type
+	if stackContains(e.ErrRoot.Stack, stack[0]) {
+		return
+	} else if len(stack) == 1 {
+		e.ErrRoot.Stack = append(e.ErrRoot.Stack, stack[0])
+	} else if len(e.ErrRoot.Stack) == 1 {
+		e.ErrRoot.Stack = append(e.ErrRoot.Stack, stack[0])
+	} else if len(stack) > 1 {
+		for i, f := range e.ErrRoot.Stack {
+			if f == stack[1] {
+				e.ErrRoot.Stack = append(e.ErrRoot.Stack[:i], append([]StackFrame{stack[0]}, e.ErrRoot.Stack[i:]...)...)
+				break
+			}
+		}
 	}
 }
 
@@ -187,6 +198,9 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 	}
 	return wrapMap
 }
+
+// todo: would be nice to move these to be part of the Stack type
+//       would prob be worth it even if it required type casting before range or just i method instead
 
 func stackContains(stack []StackFrame, frame StackFrame) bool {
 	for _, f := range stack {

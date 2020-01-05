@@ -45,27 +45,26 @@ func Wrap(err error, msg string) error {
 		return nil
 	}
 
+	stack := callers()
 	switch e := err.(type) {
 	case *rootError:
 		if e.global {
-			e.stack = callers()
+			e.stack = stack
 		}
 	case *wrapError:
 	default:
 		err = &rootError{
 			msg:   e.Error(),
-			stack: callers(),
+			stack: stack,
 		}
 	}
 
 	return &wrapError{
 		msg:   msg,
 		err:   err,
-		frame: caller(),
+		stack: stack,
 	}
 }
-
-// todo: need to change wrapError
 
 // Wrapf adds additional context to all error types while maintaining the type of the original error.
 //
@@ -75,28 +74,25 @@ func Wrapf(err error, format string, args ...interface{}) error {
 		return nil
 	}
 
+	stack := callers()
 	switch e := err.(type) {
 	case *rootError:
 		if e.global {
-			e.stack = callers()
+			e.stack = stack
 		}
 	case *wrapError:
-		// todo: get full stack trace and fold within the root stack (how?)
 	default:
 		err = &rootError{
 			msg:   e.Error(),
-			stack: callers(),
+			stack: stack,
 		}
 	}
-
-	// wrapStack := callers()
-	// fmt.Println(wrapStack.get())
 
 	msg := fmt.Sprintf(format, args...)
 	return &wrapError{
 		msg:   msg,
 		err:   err,
-		frame: caller(),
+		stack: stack,
 	}
 }
 
@@ -174,7 +170,7 @@ func (e *rootError) Is(target error) bool {
 type wrapError struct {
 	msg   string
 	err   error
-	frame *frame
+	stack *stack
 }
 
 func (e *wrapError) Error() string {

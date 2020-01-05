@@ -17,13 +17,6 @@ func (f *StackFrame) format(sep string) string {
 	return fmt.Sprintf("%v%v%v%v%v", f.Name, sep, f.File, sep, f.Line)
 }
 
-// caller returns a single stack frame.
-func caller() *frame {
-	pc, _, _, _ := runtime.Caller(2)
-	var f frame = frame(pc)
-	return &f
-}
-
 // callers returns a stack trace.
 func callers() *stack {
 	const depth = 64
@@ -40,10 +33,10 @@ func (f frame) pc() uintptr {
 	return uintptr(f) - 1
 }
 
-func (f frame) get() *StackFrame {
+func (f frame) get() StackFrame {
 	fn := runtime.FuncForPC(f.pc())
 	if fn == nil {
-		return &StackFrame{
+		return StackFrame{
 			Name: "unknown",
 			File: "unknown",
 		}
@@ -54,7 +47,7 @@ func (f frame) get() *StackFrame {
 	name = name[i+1:]
 	file, line := fn.FileLine(f.pc())
 
-	return &StackFrame{
+	return StackFrame{
 		Name: name,
 		File: file,
 		Line: line,
@@ -69,7 +62,7 @@ func (s *stack) get() []StackFrame {
 	for _, f := range *s {
 		frame := frame(f)
 		sFrame := frame.get()
-		sFrames = append(sFrames, *sFrame)
+		sFrames = append(sFrames, sFrame)
 	}
 	return sFrames
 }

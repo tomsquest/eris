@@ -49,8 +49,28 @@ func ExampleUnpack_wrapped() {
 		return nil
 	}
 
+	// another example func that catches and wraps an error
+	processFile := func(fname string) error {
+		// parse the file
+		err := parseFile(fname)
+		if err != nil {
+			return eris.Wrapf(err, "error processing file '%v'", fname)
+		}
+		return nil
+	}
+
+	// another example func that catches and wraps an error
+	printFile := func(fname string) error {
+		// process the file
+		err := processFile(fname)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	// unpack and print the raw error
-	err := parseFile("example.json")
+	err := printFile("example.json")
 	uerr := eris.Unpack(err)
 	jsonErr, _ := json.MarshalIndent(uerr, "", "\t")
 	fmt.Println(string(jsonErr))
