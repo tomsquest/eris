@@ -221,12 +221,12 @@ func ExampleUnpackedError_ToString_global() {
 
 	// example output:
 	// unexpected EOF
-	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 195
-	//   eris_test.ExampleUnpackedError_ToString_global.func2: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 201
-	//   eris_test.ExampleUnpackedError_ToString_global: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 209
-	//   eris_test.TestExampleUnpackedError_ToString_global: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 236
+	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 195
+	//   eris_test.ExampleUnpackedError_ToString_global.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 201
+	//   eris_test.ExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 209
+	//   eris_test.TestExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 236
 	// error reading file 'example.json'
-	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 195
+	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 195
 }
 
 func TestExampleUnpackedError_ToString_global(t *testing.T) {
@@ -270,13 +270,13 @@ func ExampleUnpackedError_ToString_local() {
 
 	// example output:
 	// unexpected EOF
-	//   eris_test.ExampleUnpackedError_ToString_local.func1: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 244
-	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 250
-	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 252
-	//   eris_test.ExampleUnpackedError_ToString_local: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 258
-	//   eris_test.TestExampleUnpackedError_ToString_local: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 286
+	//   eris_test.ExampleUnpackedError_ToString_local.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 244
+	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 250
+	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 252
+	//   eris_test.ExampleUnpackedError_ToString_local: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 258
+	//   eris_test.TestExampleUnpackedError_ToString_local: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 286
 	// error reading file 'example.json'
-	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/charless/go/src/github.com/rotisserie/eris/examples_test.go: 252
+	//   eris_test.ExampleUnpackedError_ToString_local.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 252
 }
 
 func TestExampleUnpackedError_ToString_local(t *testing.T) {
