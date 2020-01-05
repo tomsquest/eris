@@ -41,92 +41,92 @@ type UnpackedError struct {
 
 // Unpack returns UnpackedError type for a given golang error type.
 func Unpack(err error) UnpackedError {
-	e := UnpackedError{}
+	upErr := UnpackedError{}
 	switch err.(type) {
 	case nil:
-		return e
+		return upErr
 	case *rootError:
-		e.unpackRootErr(err.(*rootError))
+		upErr.unpackRootErr(err.(*rootError))
 	case *wrapError:
-		e.unpackWrapErr(err.(*wrapError))
+		upErr.unpackWrapErr(err.(*wrapError))
 	default:
-		e.ExternalErr = err.Error()
+		upErr.ExternalErr = err.Error()
 	}
-	return e
+	return upErr
 }
 
 // ToString returns a default formatted string for a given eris error.
-func (e *UnpackedError) ToString(format Format) string {
+func (upErr *UnpackedError) ToString(format Format) string {
 	// todo: clean up these conditionals if possible
 	var str string
-	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
-		str += e.ErrRoot.formatStr(format)
+	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+		str += upErr.ErrRoot.formatStr(format)
 	}
-	if format.WithTrace && len(e.ErrChain) != 0 {
+	if format.WithTrace && len(upErr.ErrChain) != 0 {
 		str += format.Sep
 	}
-	for _, eLink := range e.ErrChain {
+	for _, eLink := range upErr.ErrChain {
 		if !format.WithTrace {
 			str += format.Sep
 		}
 		str += eLink.formatStr(format)
 	}
-	if e.ExternalErr != "" {
-		str += fmt.Sprint(e.ExternalErr)
+	if upErr.ExternalErr != "" {
+		str += fmt.Sprint(upErr.ExternalErr)
 	}
 	return str
 }
 
 // ToJSON returns a JSON formatted map for a given eris error.
-func (e *UnpackedError) ToJSON(format Format) map[string]interface{} {
+func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
 	// todo: clean up these conditionals if possible
 	jsonMap := make(map[string]interface{})
-	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
-		jsonMap["root"] = e.ErrRoot.formatJSON(format)
+	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+		jsonMap["root"] = upErr.ErrRoot.formatJSON(format)
 	}
 
-	if len(e.ErrChain) != 0 {
+	if len(upErr.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
-		for _, eLink := range e.ErrChain {
+		for _, eLink := range upErr.ErrChain {
 			wrapMap := eLink.formatJSON(format)
 			wrapArr = append(wrapArr, wrapMap)
 		}
 		jsonMap["wrap"] = wrapArr
 	}
 
-	if e.ExternalErr != "" {
-		jsonMap["external"] = fmt.Sprint(e.ExternalErr)
+	if upErr.ExternalErr != "" {
+		jsonMap["external"] = fmt.Sprint(upErr.ExternalErr)
 	}
 
 	return jsonMap
 }
 
-func (e *UnpackedError) unpackRootErr(err *rootError) {
-	e.ErrRoot.Msg = err.msg
-	e.ErrRoot.Stack = err.stack.get()
+func (upErr *UnpackedError) unpackRootErr(err *rootError) {
+	upErr.ErrRoot.Msg = err.msg
+	upErr.ErrRoot.Stack = err.stack.get()
 }
 
-func (e *UnpackedError) unpackWrapErr(err *wrapError) {
-	// prepend links to match the stack trace order
+func (upErr *UnpackedError) unpackWrapErr(err *wrapError) {
+	// prepend links in stack trace order
 	link := ErrLink{Msg: err.msg}
-	stack := err.stack.get()
-	if len(stack) > 0 {
-		link.Frame = stack[0]
+	wFrames := err.stack.get()
+	if len(wFrames) > 0 {
+		link.Frame = wFrames[0]
 	}
-	e.ErrChain = append([]ErrLink{link}, e.ErrChain...)
+	upErr.ErrChain = append([]ErrLink{link}, upErr.ErrChain...)
 
 	nextErr := err.Unwrap()
 	switch nextErr.(type) {
 	case *rootError:
-		e.unpackRootErr(nextErr.(*rootError))
+		upErr.unpackRootErr(nextErr.(*rootError))
 	case *wrapError:
-		e.unpackWrapErr(nextErr.(*wrapError))
+		upErr.unpackWrapErr(nextErr.(*wrapError))
 	default:
 		return
 	}
 
-	// combine the wrap stack with the root stack
-	e.ErrRoot.Stack.combineStack(stack)
+	// insert the wrap frame into the root stack
+	upErr.ErrRoot.Stack.insertFrame(wFrames)
 }
 
 // ErrRoot represents an error stack and the accompanying message.

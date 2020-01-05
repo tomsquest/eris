@@ -9,6 +9,7 @@ import (
 // Stack is an array of stack frames stored in a human readable format.
 type Stack []StackFrame
 
+// contains checks if a stack trace contains a specific frame.
 func (s *Stack) contains(frame StackFrame) bool {
 	for _, f := range *s {
 		if f == frame {
@@ -18,25 +19,27 @@ func (s *Stack) contains(frame StackFrame) bool {
 	return false
 }
 
-// todo: this needs some improvement and explanatory comments
-func (s *Stack) combineStack(wStack []StackFrame) {
-	if s.contains(wStack[0]) {
+// insertFrames inserts a wrap error frame into the correct place of the root error stack trace.
+func (s *Stack) insertFrame(wFrames []StackFrame) {
+	if len(wFrames) == 0 || s.contains(wFrames[0]) {
 		return
+	} else if len(wFrames) == 1 {
+		// append the frame to the end if there's only one
+		*s = append(*s, wFrames[0])
 	}
+
 	rStack := *s
-	if len(wStack) == 1 || len(rStack) == 1 {
-		rStack = append(rStack, wStack[0])
-	} else if len(wStack) > 1 {
-		for i, f := range rStack {
-			if f == wStack[1] {
-				rStack = append(rStack[:i], append([]StackFrame{wStack[0]}, rStack[i:]...)...)
-				break
-			}
+	for i, f := range rStack {
+		if f == wFrames[1] {
+			// insert the first frame into the stack if the second frame is found
+			rStack = append(rStack[:i], append([]StackFrame{wFrames[0]}, rStack[i:]...)...)
+			break
 		}
 	}
 	*s = rStack
 }
 
+// format returns an array of formatted stack frames.
 func (s *Stack) format(sep string) []string {
 	var str []string
 	for _, f := range *s {
@@ -52,6 +55,7 @@ type StackFrame struct {
 	Line int
 }
 
+// format returns a formatted stack frame.
 func (f *StackFrame) format(sep string) string {
 	return fmt.Sprintf("%v%v%v%v%v", f.Name, sep, f.File, sep, f.Line)
 }
@@ -68,6 +72,7 @@ func callers() *stack {
 // frame is a single program counter of a stack frame.
 type frame uintptr
 
+// get returns a human readable stack frame.
 func (f frame) get() StackFrame {
 	pc := uintptr(f) - 1
 	fn := runtime.FuncForPC(pc)
@@ -93,6 +98,7 @@ func (f frame) get() StackFrame {
 // stack is an array of program counters.
 type stack []uintptr
 
+// get returns a human readable stack trace.
 func (s *stack) get() []StackFrame {
 	var sFrames []StackFrame
 	for _, f := range *s {
