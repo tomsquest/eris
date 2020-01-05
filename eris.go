@@ -153,7 +153,6 @@ func (e *rootError) Error() string {
 	return fmt.Sprint(e)
 }
 
-// todo: document available runes
 func (e *rootError) Format(s fmt.State, verb rune) {
 	printError(e, s, verb)
 }

@@ -57,35 +57,36 @@ func Unpack(err error) UnpackedError {
 
 // ToString returns a default formatted string for a given eris error.
 func (upErr *UnpackedError) ToString(format Format) string {
-	// todo: clean up these conditionals if possible
 	var str string
-	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+	if upErr.ErrRoot.Msg != "" || len(upErr.ErrRoot.Stack) > 0 {
 		str += upErr.ErrRoot.formatStr(format)
+		if format.WithTrace && len(upErr.ErrChain) > 0 {
+			str += format.Sep
+		}
 	}
-	if format.WithTrace && len(upErr.ErrChain) != 0 {
-		str += format.Sep
-	}
+
 	for _, eLink := range upErr.ErrChain {
 		if !format.WithTrace {
 			str += format.Sep
 		}
 		str += eLink.formatStr(format)
 	}
+
 	if upErr.ExternalErr != "" {
 		str += fmt.Sprint(upErr.ExternalErr)
 	}
+
 	return str
 }
 
 // ToJSON returns a JSON formatted map for a given eris error.
 func (upErr *UnpackedError) ToJSON(format Format) map[string]interface{} {
-	// todo: clean up these conditionals if possible
 	jsonMap := make(map[string]interface{})
-	if len(upErr.ErrRoot.Msg) != 0 || len(upErr.ErrRoot.Stack) != 0 {
+	if upErr.ErrRoot.Msg != "" || len(upErr.ErrRoot.Stack) > 0 {
 		jsonMap["root"] = upErr.ErrRoot.formatJSON(format)
 	}
 
-	if len(upErr.ErrChain) != 0 {
+	if len(upErr.ErrChain) > 0 {
 		var wrapArr []map[string]interface{}
 		for _, eLink := range upErr.ErrChain {
 			wrapMap := eLink.formatJSON(format)
