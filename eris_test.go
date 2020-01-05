@@ -21,6 +21,8 @@ func setupTestCase(wrapf bool, cause error, input []string) error {
 }
 
 func TestErrorWrapping(t *testing.T) {
+	globalErr := eris.NewGlobal("global error")
+
 	tests := map[string]struct {
 		cause  error    // root error
 		input  []string // input for error wrapping
@@ -29,6 +31,11 @@ func TestErrorWrapping(t *testing.T) {
 		"nil root error": {
 			cause: nil,
 			input: []string{"additional context"},
+		},
+		"standard error wrapping with global root cause (eris.NewGlobal)": {
+			cause:  globalErr,
+			input:  []string{"additional context", "even more context"},
+			output: "global error: additional context: even more context",
 		},
 		"standard error wrapping with internal root cause (eris.New)": {
 			cause:  eris.New("root error"),
@@ -53,6 +60,12 @@ func TestErrorWrapping(t *testing.T) {
 	for desc, tc := range tests {
 		t.Run(desc, func(t *testing.T) {
 			err := setupTestCase(false, tc.cause, tc.input)
+			if err != nil && tc.cause == nil {
+				t.Errorf("%v: wrapping nil errors should return nil but got { %v }", desc, err)
+			} else if err != nil && tc.output != err.Error() {
+				t.Errorf("%v: expected { %v } got { %v }", desc, tc.output, err)
+			}
+			err = setupTestCase(true, tc.cause, tc.input)
 			if err != nil && tc.cause == nil {
 				t.Errorf("%v: wrapping nil errors should return nil but got { %v }", desc, err)
 			} else if err != nil && tc.output != err.Error() {
@@ -104,7 +117,7 @@ func TestErrorUnwrap(t *testing.T) {
 }
 
 func TestErrorIs(t *testing.T) {
-	globalErr := eris.New("global error")
+	globalErr := eris.NewGlobal("global error")
 
 	tests := map[string]struct {
 		cause   error    // root error

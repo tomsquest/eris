@@ -138,9 +138,6 @@ type ErrRoot struct {
 }
 
 func (err *ErrRoot) formatStr(format Format) string {
-	if err == nil {
-		return ""
-	}
 	str := err.Msg
 	str += format.Msg
 	if format.WithTrace {
@@ -157,9 +154,6 @@ func (err *ErrRoot) formatStr(format Format) string {
 }
 
 func (err *ErrRoot) formatJSON(format Format) map[string]interface{} {
-	if err == nil {
-		return nil
-	}
 	rootMap := make(map[string]interface{})
 	rootMap["message"] = fmt.Sprint(err.Msg)
 	if format.WithTrace {

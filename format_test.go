@@ -119,11 +119,6 @@ func TestFormatStr(t *testing.T) {
 					Msg: "root error",
 				},
 			},
-			formattedInput: eris.UnpackedError{},
-			basicOutput:    "root error",
-		},
-		"basic root error (formatted)": {
-			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
 				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
@@ -141,6 +136,7 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
+			basicOutput:     "root error",
 			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100",
 		},
 		"basic wrapped error": {
@@ -157,11 +153,6 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
-			formattedInput: eris.UnpackedError{},
-			basicOutput:    "root error: additional context: even more context",
-		},
-		"basic wrapped error (formatted)": {
-			basicInput: eris.UnpackedError{},
 			formattedInput: eris.UnpackedError{
 				ErrRoot: eris.ErrRoot{
 					Msg: "root error",
@@ -189,6 +180,7 @@ func TestFormatStr(t *testing.T) {
 					},
 				},
 			},
+			basicOutput:     "root error: additional context: even more context",
 			formattedOutput: "root error\n\teris.TestFormatStr: format_test.go: 99\n\tgolang.Runtime: runtime.go: 100\nadditional context\n\teris.TestFormatStr: format_test.go: 300",
 		},
 		"basic external error": {
