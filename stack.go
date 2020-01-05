@@ -6,6 +6,45 @@ import (
 	"strings"
 )
 
+// Stack is an array of stack frames stored in a human readable format.
+type Stack []StackFrame
+
+func (s *Stack) contains(frame StackFrame) bool {
+	for _, f := range *s {
+		if f == frame {
+			return true
+		}
+	}
+	return false
+}
+
+// todo: this needs some improvement and explanatory comments
+func (s *Stack) combineStack(wStack []StackFrame) {
+	if s.contains(wStack[0]) {
+		return
+	}
+	rStack := *s
+	if len(wStack) == 1 || len(rStack) == 1 {
+		rStack = append(rStack, wStack[0])
+	} else if len(wStack) > 1 {
+		for i, f := range rStack {
+			if f == wStack[1] {
+				rStack = append(rStack[:i], append([]StackFrame{wStack[0]}, rStack[i:]...)...)
+				break
+			}
+		}
+	}
+	*s = rStack
+}
+
+func (s *Stack) format(sep string) []string {
+	var str []string
+	for _, f := range *s {
+		str = append(str, f.format(sep))
+	}
+	return str
+}
+
 // StackFrame stores a frame's runtime information in a human readable format.
 type StackFrame struct {
 	Name string
@@ -29,12 +68,9 @@ func callers() *stack {
 // frame is a single program counter of a stack frame.
 type frame uintptr
 
-func (f frame) pc() uintptr {
-	return uintptr(f) - 1
-}
-
 func (f frame) get() StackFrame {
-	fn := runtime.FuncForPC(f.pc())
+	pc := uintptr(f) - 1
+	fn := runtime.FuncForPC(pc)
 	if fn == nil {
 		return StackFrame{
 			Name: "unknown",
@@ -45,7 +81,7 @@ func (f frame) get() StackFrame {
 	name := fn.Name()
 	i := strings.LastIndex(name, "/")
 	name = name[i+1:]
-	file, line := fn.FileLine(f.pc())
+	file, line := fn.FileLine(pc)
 
 	return StackFrame{
 		Name: name,

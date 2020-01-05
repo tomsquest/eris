@@ -57,6 +57,7 @@ func Unpack(err error) UnpackedError {
 
 // ToString returns a default formatted string for a given eris error.
 func (e *UnpackedError) ToString(format Format) string {
+	// todo: clean up these conditionals if possible
 	var str string
 	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
 		str += e.ErrRoot.formatStr(format)
@@ -78,10 +79,12 @@ func (e *UnpackedError) ToString(format Format) string {
 
 // ToJSON returns a JSON formatted map for a given eris error.
 func (e *UnpackedError) ToJSON(format Format) map[string]interface{} {
+	// todo: clean up these conditionals if possible
 	jsonMap := make(map[string]interface{})
 	if len(e.ErrRoot.Msg) != 0 || len(e.ErrRoot.Stack) != 0 {
 		jsonMap["root"] = e.ErrRoot.formatJSON(format)
 	}
+
 	if len(e.ErrChain) != 0 {
 		var wrapArr []map[string]interface{}
 		for _, eLink := range e.ErrChain {
@@ -90,22 +93,21 @@ func (e *UnpackedError) ToJSON(format Format) map[string]interface{} {
 		}
 		jsonMap["wrap"] = wrapArr
 	}
+
 	if e.ExternalErr != "" {
 		jsonMap["external"] = fmt.Sprint(e.ExternalErr)
 	}
+
 	return jsonMap
 }
 
-// unpackRootErr unpacks a rootError's message and stack trace.
-// it also appends any additional wrapError frames to the stack.
 func (e *UnpackedError) unpackRootErr(err *rootError) {
 	e.ErrRoot.Msg = err.msg
 	e.ErrRoot.Stack = err.stack.get()
 }
 
-// unpackWrapErr unpacks a wrapError until it hits a rootError.
 func (e *UnpackedError) unpackWrapErr(err *wrapError) {
-	// Prepend each link so they'll appear in the same order as the stack.
+	// prepend links to match the stack trace order
 	link := ErrLink{Msg: err.msg}
 	stack := err.stack.get()
 	if len(stack) > 0 {
@@ -123,36 +125,21 @@ func (e *UnpackedError) unpackWrapErr(err *wrapError) {
 		return
 	}
 
-	// e.ErrRoot.Stack = insertFrame(stack[0])
-
-	// todo: move this to a helper method that's part of the Stack type
-	if stackContains(e.ErrRoot.Stack, stack[0]) {
-		return
-	} else if len(stack) == 1 {
-		e.ErrRoot.Stack = append(e.ErrRoot.Stack, stack[0])
-	} else if len(e.ErrRoot.Stack) == 1 {
-		e.ErrRoot.Stack = append(e.ErrRoot.Stack, stack[0])
-	} else if len(stack) > 1 {
-		for i, f := range e.ErrRoot.Stack {
-			if f == stack[1] {
-				e.ErrRoot.Stack = append(e.ErrRoot.Stack[:i], append([]StackFrame{stack[0]}, e.ErrRoot.Stack[i:]...)...)
-				break
-			}
-		}
-	}
+	// combine the wrap stack with the root stack
+	e.ErrRoot.Stack.combineStack(stack)
 }
 
 // ErrRoot represents an error stack and the accompanying message.
 type ErrRoot struct {
 	Msg   string
-	Stack []StackFrame
+	Stack Stack
 }
 
 func (err *ErrRoot) formatStr(format Format) string {
 	str := err.Msg
 	str += format.Msg
 	if format.WithTrace {
-		stackArr := formatStackFrames(err.Stack, format.TSep)
+		stackArr := err.Stack.format(format.TSep)
 		for i, frame := range stackArr {
 			str += format.TBeg
 			str += frame
@@ -168,7 +155,7 @@ func (err *ErrRoot) formatJSON(format Format) map[string]interface{} {
 	rootMap := make(map[string]interface{})
 	rootMap["message"] = fmt.Sprint(err.Msg)
 	if format.WithTrace {
-		rootMap["stack"] = formatStackFrames(err.Stack, format.TSep)
+		rootMap["stack"] = err.Stack.format(format.TSep)
 	}
 	return rootMap
 }
@@ -180,8 +167,7 @@ type ErrLink struct {
 }
 
 func (eLink *ErrLink) formatStr(format Format) string {
-	var str string
-	str += eLink.Msg
+	str := eLink.Msg
 	str += format.Msg
 	if format.WithTrace {
 		str += format.TBeg
@@ -197,24 +183,4 @@ func (eLink *ErrLink) formatJSON(format Format) map[string]interface{} {
 		wrapMap["stack"] = eLink.Frame.format(format.TSep)
 	}
 	return wrapMap
-}
-
-// todo: would be nice to move these to be part of the Stack type
-//       would prob be worth it even if it required type casting before range or just i method instead
-
-func stackContains(stack []StackFrame, frame StackFrame) bool {
-	for _, f := range stack {
-		if f == frame {
-			return true
-		}
-	}
-	return false
-}
-
-func formatStackFrames(s []StackFrame, sep string) []string {
-	var str []string
-	for _, f := range s {
-		str = append(str, f.format(sep))
-	}
-	return str
 }

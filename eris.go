@@ -1,7 +1,6 @@
 package eris
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -32,8 +31,6 @@ func Errorf(format string, args ...interface{}) error {
 	}
 }
 
-// todo: maybe try to change back to wrap helper and see if the bug is fixable
-
 // Wrap adds additional context to all error types while maintaining the type of the original error.
 //
 // This method behaves differently for each error type. For root errors, the stack trace is reset to the current
@@ -41,6 +38,7 @@ func Errorf(format string, args ...interface{}) error {
 // wrapped with the new context. For external types (i.e. something other than root or wrap errors), a new root
 // error is created for the original error and then it's wrapped with the additional context.
 func Wrap(err error, msg string) error {
+	// todo: try the wrap helper again and see if the bug is fixable
 	if err == nil {
 		return nil
 	}
@@ -193,28 +191,15 @@ func (e *wrapError) Unwrap() error {
 }
 
 func printError(err error, s fmt.State, verb rune) {
-	var withTrace, withJSON bool
-	if s.Flag('+') {
-		withTrace = true
-	}
-	if s.Flag('#') {
-		withJSON = true
+	var withTrace bool
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			withTrace = true
+		}
 	}
 	format := NewDefaultFormat(withTrace)
 	uErr := Unpack(err)
-
-	var str string
-	switch verb {
-	case 's':
-		fallthrough
-	case 'v':
-		if withJSON {
-			bytes, _ := json.MarshalIndent(uErr.ToJSON(format), "", "\t")
-			str = string(bytes)
-		} else {
-			str = uErr.ToString(format)
-		}
-	}
-
+	str := uErr.ToString(format)
 	_, _ = io.WriteString(s, str)
 }
