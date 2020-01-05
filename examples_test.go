@@ -6,7 +6,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/rotisserie/eris"
 )
 
@@ -49,12 +48,12 @@ func ExampleUnpack_wrapped() {
 		return nil
 	}
 
-	// another example func that catches and wraps an error
+	// example func that just catches and returns an error
 	processFile := func(fname string) error {
 		// parse the file
 		err := parseFile(fname)
 		if err != nil {
-			return eris.Wrapf(err, "error processing file '%v'", fname)
+			return err
 		}
 		return nil
 	}
@@ -64,7 +63,7 @@ func ExampleUnpack_wrapped() {
 		// process the file
 		err := processFile(fname)
 		if err != nil {
-			return err
+			return eris.Wrapf(err, "error printing file '%v'", fname)
 		}
 		return nil
 	}
@@ -124,28 +123,15 @@ func ExampleUnpackedError_ToJSON_global() {
 		return nil
 	}
 
-	// call parseFile and catch the error
+	// unpack and print the error via uerr.ToJSON(...)
 	err := parseFile("example.json")
-
-	// print the error via fmt.Printf
-	fmt.Printf("%v\n", err) // %v: omit stack trace
-
-	// example output:
-	// unexpected EOF: error reading file 'example.json'
-
-	// unpack and print the error via uerr.ToString(...)
 	uerr := eris.Unpack(err)
 	format := eris.NewDefaultFormat(true) // true: include stack trace
-	fmt.Printf("%v\n", uerr.ToString(format))
+	u, _ := json.MarshalIndent(uerr.ToJSON(format), "", "\t")
+	fmt.Printf("%v\n", string(u))
 
 	// example output:
-	// unexpected EOF
-	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 122
-	//   eris_test.ExampleUnpackedError_ToString_global.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 128
-	//   eris_test.ExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 136
-	//   eris_test.TestExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 154
-	// error reading file 'example.json'
-	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 122
+	//
 }
 
 // Hack to run examples that don't have a predictable output (i.e. all
@@ -160,7 +146,30 @@ func TestExampleUnpackedError_ToJSON_global(t *testing.T) {
 // Demonstrates JSON formatting of wrapped errors that originate from
 // local root errors (created at the source of the error via eris.New).
 func ExampleUnpackedError_ToJSON_local() {
-	fmt.Println("testing")
+	// example func that returns a newly created error
+	readFile := func(fname string) error {
+		return eris.New("unexpected EOF")
+	}
+
+	// example func that catches and returns an error without modification
+	parseFile := func(fname string) error {
+		// read the file
+		err := readFile(fname)
+		if err != nil {
+			return eris.Wrapf(err, "error reading file '%v'", fname)
+		}
+		return nil
+	}
+
+	// unpack and print the error via uerr.ToJSON(...)
+	err := parseFile("example.json")
+	uerr := eris.Unpack(err)
+	format := eris.NewDefaultFormat(true) // true: include stack trace
+	u, _ := json.MarshalIndent(uerr.ToJSON(format), "", "\t")
+	fmt.Printf("%v\n", string(u))
+
+	// example output:
+	//
 }
 
 func TestExampleUnpackedError_ToJSON_local(t *testing.T) {
@@ -272,87 +281,4 @@ func TestExampleUnpackedError_ToString_local(t *testing.T) {
 		return
 	}
 	ExampleUnpackedError_ToString_local()
-}
-
-var GlobalPkgErr = errors.New("new global pkg error")
-
-var GlobalErr = eris.NewGlobal("new global eris error")
-
-func localErr() error {
-	return eris.New("new local eris error")
-}
-
-func nestedLocalErr() error {
-	return localErr()
-}
-
-func localPkgErr() error {
-	return errors.New("new local pkg error")
-}
-
-func nestedLocalPkgErr() error {
-	return localPkgErr()
-}
-
-func globalErr() error {
-	return eris.Wrap(GlobalErr, "some context")
-}
-
-func nestedGlobalErr() error {
-	return globalErr()
-}
-
-func globalPkgErr() error {
-	return errors.Wrap(GlobalPkgErr, "some context")
-}
-
-func nestedGlobalPkgErr() error {
-	return globalPkgErr()
-}
-
-// todo: after implementing stack trace unpacking, try hard to break it
-//       pretty sure it's possible if there are stack frames between the end of the stack and newer wrap frames
-
-func main() {
-	localErr := localErr()
-	localErr = eris.Wrap(localErr, "new context")
-	fmt.Println("--- local eris string ('+v') ---")
-	fmt.Printf("%+v\n\n", localErr)
-	fmt.Println("--- local eris JSON ('+#v') ---")
-	fmt.Printf("%#+v\n\n", localErr)
-
-	nestedLocalErr := nestedLocalErr()
-	nestedLocalErr = eris.Wrap(nestedLocalErr, "new context")
-	fmt.Println("--- nested local eris string ('+v') ---")
-	fmt.Printf("%+v\n\n", nestedLocalErr)
-	fmt.Println("--- nested local eris JSON ('+#v') ---")
-	fmt.Printf("%+#v\n\n", nestedLocalErr)
-
-	nestedLocalPkgErr := nestedLocalPkgErr()
-	nestedLocalPkgErr = errors.Wrap(nestedLocalPkgErr, "new context on pkg error")
-	fmt.Println("--- nested local pkg/errors string ('+v') ---")
-	fmt.Printf("%+v\n\n", nestedLocalPkgErr)
-
-	globalErr := globalErr()
-	globalErr = eris.Wrap(globalErr, "new context")
-	fmt.Println("--- global eris string ('+v') ---")
-	fmt.Printf("%+v\n\n", globalErr)
-	fmt.Println("--- global eris JSON ('+#v') ---")
-	fmt.Printf("%+#v\n\n", globalErr)
-
-	nestedGlobalErr := nestedGlobalErr()
-	nestedGlobalErr = eris.Wrap(nestedGlobalErr, "new context")
-	err := eris.Wrap(nestedGlobalErr, "more context")
-	fmt.Println("--- nested global eris string ('+v') ---")
-	fmt.Printf("%+v\n\n", nestedGlobalErr)
-	fmt.Println("--- nested global eris JSON ('#v') ---")
-	fmt.Printf("%+v\n\n", nestedGlobalErr)
-	fmt.Println("--- nested global eris JSON ('+#v') ---")
-	fmt.Printf("%+#v\n\n", nestedGlobalErr)
-
-	nestedGlobalPkgErr := nestedGlobalPkgErr()
-	nestedGlobalPkgErr = errors.Wrap(nestedGlobalPkgErr, "new context")
-	err = errors.Wrap(nestedGlobalPkgErr, "more context")
-	fmt.Println("--- nested global pkg/errors ---")
-	fmt.Printf("%+v\n\n", err)
 }
