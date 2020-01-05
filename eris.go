@@ -65,6 +65,8 @@ func Wrap(err error, msg string) error {
 	}
 }
 
+// todo: need to change wrapError
+
 // Wrapf adds additional context to all error types while maintaining the type of the original error.
 //
 // This is a convenience method for wrapping errors with formatted messages and is otherwise the same as Wrap.
@@ -79,12 +81,16 @@ func Wrapf(err error, format string, args ...interface{}) error {
 			e.stack = callers()
 		}
 	case *wrapError:
+		// todo: get full stack trace and fold within the root stack (how?)
 	default:
 		err = &rootError{
 			msg:   e.Error(),
 			stack: callers(),
 		}
 	}
+
+	// wrapStack := callers()
+	// fmt.Println(wrapStack.get())
 
 	msg := fmt.Sprintf(format, args...)
 	return &wrapError{

@@ -54,51 +54,6 @@ func ExampleUnpack_wrapped() {
 	uerr := eris.Unpack(err)
 	jsonErr, _ := json.MarshalIndent(uerr, "", "\t")
 	fmt.Println(string(jsonErr))
-
-	// example output:
-	// {
-	//   "ErrRoot": {
-	//     "Msg": "unexpected EOF",
-	//     "Stack": [
-	//       {
-	//         "Name": "eris_test.ExampleUnpack_wrapped.func1",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 39
-	//       },
-	//       {
-	//         "Name": "eris_test.ExampleUnpack_wrapped.func2",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 45
-	//       },
-	//       {
-	//         "Name": "eris_test.ExampleUnpack_wrapped",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 53
-	//       },
-	//       {
-	//         "Name": "eris_test.TestExampleUnpack_wrapped",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 68
-	//       },
-	//       {
-	//         "Name": "eris_test.ExampleUnpack_wrapped.func2",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 47
-	//       }
-	//     ]
-	//   },
-	//   "ErrChain": [
-	//     {
-	//       "Msg": "error reading file 'example.json'",
-	//       "Frame": {
-	//         "Name": "eris_test.ExampleUnpack_wrapped.func2",
-	//         "File": "/Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go",
-	//         "Line": 47
-	//       }
-	//     }
-	//   ],
-	//   "ExternalErr": ""
-	// }
 }
 
 // Hack to run examples that don't have a predictable output (i.e. all
@@ -113,13 +68,64 @@ func TestExampleUnpack_wrapped(t *testing.T) {
 // Demonstrates JSON formatting of wrapped errors that originate from
 // external (non-eris) error types.
 func ExampleUnpackedError_ToJSON_external() {
-	fmt.Println("testing")
+	// example func that returns an IO error
+	readFile := func(fname string) error {
+		return io.ErrUnexpectedEOF
+	}
+
+	// unpack and print the error
+	err := readFile("example.json")
+	uerr := eris.Unpack(err)
+	format := eris.NewDefaultFormat(false) // false: omit stack trace
+	u, _ := json.Marshal(uerr.ToJSON(format))
+	fmt.Println(string(u))
+	// Output:
+	// {"external":"unexpected EOF"}
 }
 
 // Demonstrates JSON formatting of wrapped errors that originate from
 // global root errors (created via eris.NewGlobal).
 func ExampleUnpackedError_ToJSON_global() {
-	fmt.Println("testing")
+	// declare a "global" error type
+	ErrUnexpectedEOF := eris.NewGlobal("unexpected EOF")
+
+	// example func that wraps a global error value
+	readFile := func(fname string) error {
+		return eris.Wrapf(ErrUnexpectedEOF, "error reading file '%v'", fname)
+	}
+
+	// example func that catches and returns an error without modification
+	parseFile := func(fname string) error {
+		// read the file
+		err := readFile(fname)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// call parseFile and catch the error
+	err := parseFile("example.json")
+
+	// print the error via fmt.Printf
+	fmt.Printf("%v\n", err) // %v: omit stack trace
+
+	// example output:
+	// unexpected EOF: error reading file 'example.json'
+
+	// unpack and print the error via uerr.ToString(...)
+	uerr := eris.Unpack(err)
+	format := eris.NewDefaultFormat(true) // true: include stack trace
+	fmt.Printf("%v\n", uerr.ToString(format))
+
+	// example output:
+	// unexpected EOF
+	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 122
+	//   eris_test.ExampleUnpackedError_ToString_global.func2: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 128
+	//   eris_test.ExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 136
+	//   eris_test.TestExampleUnpackedError_ToString_global: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 154
+	// error reading file 'example.json'
+	//   eris_test.ExampleUnpackedError_ToString_global.func1: /Users/morningvera/go/src/github.com/rotisserie/eris/examples_test.go: 122
 }
 
 // Hack to run examples that don't have a predictable output (i.e. all
