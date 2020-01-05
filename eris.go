@@ -10,7 +10,7 @@ import (
 func New(msg string) error {
 	return &rootError{
 		msg:   msg,
-		stack: callers(),
+		stack: callers(3),
 	}
 }
 
@@ -19,7 +19,7 @@ func NewGlobal(msg string) error {
 	return &rootError{
 		global: true,
 		msg:    msg,
-		stack:  callers(),
+		stack:  callers(3),
 	}
 }
 
@@ -27,7 +27,7 @@ func NewGlobal(msg string) error {
 func Errorf(format string, args ...interface{}) error {
 	return &rootError{
 		msg:   fmt.Sprintf(format, args...),
-		stack: callers(),
+		stack: callers(3),
 	}
 }
 
@@ -38,41 +38,22 @@ func Errorf(format string, args ...interface{}) error {
 // wrapped with the new context. For external types (i.e. something other than root or wrap errors), a new root
 // error is created for the original error and then it's wrapped with the additional context.
 func Wrap(err error, msg string) error {
-	// todo: try the wrap helper again and see if the bug is fixable
-	if err == nil {
-		return nil
-	}
-
-	stack := callers()
-	switch e := err.(type) {
-	case *rootError:
-		if e.global {
-			e.stack = stack
-		}
-	case *wrapError:
-	default:
-		err = &rootError{
-			msg:   e.Error(),
-			stack: stack,
-		}
-	}
-
-	return &wrapError{
-		msg:   msg,
-		err:   err,
-		stack: stack,
-	}
+	return wrap(err, msg)
 }
 
 // Wrapf adds additional context to all error types while maintaining the type of the original error.
 //
 // This is a convenience method for wrapping errors with formatted messages and is otherwise the same as Wrap.
 func Wrapf(err error, format string, args ...interface{}) error {
+	return wrap(err, fmt.Sprintf(format, args...))
+}
+
+func wrap(err error, msg string) error {
 	if err == nil {
 		return nil
 	}
 
-	stack := callers()
+	stack := callers(4)
 	switch e := err.(type) {
 	case *rootError:
 		if e.global {
@@ -86,7 +67,6 @@ func Wrapf(err error, format string, args ...interface{}) error {
 		}
 	}
 
-	msg := fmt.Sprintf(format, args...)
 	return &wrapError{
 		msg:   msg,
 		err:   err,

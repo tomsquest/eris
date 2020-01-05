@@ -61,10 +61,10 @@ func (f *StackFrame) format(sep string) string {
 }
 
 // callers returns a stack trace.
-func callers() *stack {
+func callers(skip int) *stack {
 	const depth = 64
 	var pcs [depth]uintptr
-	n := runtime.Callers(3, pcs[:])
+	n := runtime.Callers(skip, pcs[:])
 	var st stack = pcs[0 : n-2]
 	return &st
 }
